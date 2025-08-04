@@ -1,0 +1,7 @@
+Hello, this is a small text file.
+It contains a few lines of simple text.
+You can use it for testing or demonstration purposes.
+Have a great day!
+This is an additional line one.
+Here is additional line two.
+And this is additional line three.
