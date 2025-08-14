@@ -10,3 +10,6 @@ def read_root():
     A simple root endpoint to check if the server is running.
     """
     return {"message": Messages.APP_RUNNING}
+
+
+
