@@ -20,7 +20,7 @@ The project is structured to be easy to run and test. The overall flow is as fol
 
 - The main application (chroma_operations.py) is started with a server like Uvicorn.
 
-- On startup, the store_text_file_once function is called. This function checks if the ChromaDB collection is empty.
+- On startup, the sync_text_file_with_collection function is called. This function checks if the ChromaDB collection is empty.
 
 - If the collection is empty, it reads the content of data_file.txt, splits it into lines, and adds each line as a document to the ChromaDB collection.
 
