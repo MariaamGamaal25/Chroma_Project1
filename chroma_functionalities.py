@@ -6,14 +6,9 @@ from utils.enums import ChromaDBConfig, Messages, MetadataKeys
 from utils.logger import setup_logger
 from transformers import AutoTokenizer
 
-# -------------------------------
-# Logger
-# -------------------------------
 logger = setup_logger(__name__)
 
-# -------------------------------
-# Initialize ChromaDB
-# -------------------------------
+# --- Initialize ChromaDB client ---
 persist_dir = os.path.join(os.getcwd(), ChromaDBConfig.DB_DIRECTORY)
 try:
     if not os.path.isdir(os.path.dirname(persist_dir)):
@@ -25,6 +20,7 @@ except Exception as e:
     logger.error(f"Failed to initialize ChromaDB client: {str(e)}")
     raise RuntimeError(f"Failed to initialize ChromaDB client: {str(e)}")
 
+# --- Initialize embedding function ---
 try:
     _embedding_func = embedding_functions.SentenceTransformerEmbeddingFunction(
         model_name=ChromaDBConfig.EMBEDDING_MODEL
@@ -34,36 +30,36 @@ except Exception as e:
     logger.error(f"Failed to initialize embedding function: {str(e)}")
     raise RuntimeError(f"Failed to initialize embedding function: {str(e)}")
 
+# Direct client and collection reference
 client = chromadb.PersistentClient(path=ChromaDBConfig.DB_DIRECTORY)
-
 embedding_func = embedding_functions.SentenceTransformerEmbeddingFunction(
     model_name=ChromaDBConfig.EMBEDDING_MODEL
 )
-
 collection = client.get_or_create_collection(
     name=ChromaDBConfig.COLLECTION_NAME,
     embedding_function=embedding_func,
-    metadata={"hnsw:space": "cosine"}  # cosine similarity
+    metadata={"hnsw:space": "cosine"}  
 )
 
-# -------------------------------
-# Tokenizer-aware chunking
-# -------------------------------
+# Tokenizer for chunking text
+tokenizer = AutoTokenizer.from_pretrained(
+    f"sentence-transformers/{ChromaDBConfig.EMBEDDING_MODEL}"
+)
 
-
-tokenizer = AutoTokenizer.from_pretrained(f"sentence-transformers/{ChromaDBConfig.EMBEDDING_MODEL}")
 
 def chunk_text_by_tokens(text: str, max_tokens: int = 300, overlap_tokens: int = 50) -> list[str]:
     """
-    Splits text into chunks based on token count for embedding model.
+    Split a given text into chunks based on token count.
+
+    This ensures the chunks are suitable for embedding models with token limits.
 
     Args:
-        text: Full text string
-        max_tokens: Max tokens per chunk
-        overlap_tokens: Token overlap between chunks
+        text (str): The full text string to be chunked.
+        max_tokens (int): Maximum number of tokens per chunk.
+        overlap_tokens (int): Number of overlapping tokens between consecutive chunks.
 
     Returns:
-        List of text chunks
+        list[str]: A list of text chunks that fit within the token constraints.
     """
     tokens = tokenizer.encode(text, add_special_tokens=False)
     chunks = []
@@ -80,7 +76,15 @@ def chunk_text_by_tokens(text: str, max_tokens: int = 300, overlap_tokens: int =
 
 
 def get_chroma_collection():
-    """Return or create the ChromaDB collection."""
+    """
+    Retrieve or create the ChromaDB collection.
+
+    Returns:
+        chromadb.api.models.Collection.Collection: The ChromaDB collection object.
+
+    Raises:
+        RuntimeError: If the collection cannot be retrieved or created.
+    """
     try:
         return _client.get_or_create_collection(
             name=ChromaDBConfig.COLLECTION_NAME,
@@ -92,7 +96,16 @@ def get_chroma_collection():
 
 
 def ensure_text_file_exists(file_path: str) -> None:
-    """Ensure file exists and is not empty."""
+    """
+    Ensure the specified text file exists and is not empty.
+
+    Args:
+        file_path (str): Path to the text file.
+
+    Raises:
+        FileNotFoundError: If the file does not exist.
+        ValueError: If the file is empty.
+    """
     if not os.path.exists(file_path):
         logger.error(Messages.FILE_NOT_FOUND.format(file_path=file_path))
         raise FileNotFoundError(Messages.FILE_NOT_FOUND.format(file_path=file_path))
@@ -102,7 +115,17 @@ def ensure_text_file_exists(file_path: str) -> None:
 
 
 def read_text_file(file_path: str, max_tokens: int = 300, overlap_tokens: int = 50) -> list[str]:
-    """Read file and split into token-based chunks."""
+    """
+    Read a text file and split it into token-based chunks.
+
+    Args:
+        file_path (str): Path to the text file.
+        max_tokens (int): Maximum tokens per chunk.
+        overlap_tokens (int): Tokens overlapping between chunks.
+
+    Returns:
+        list[str]: List of chunked strings from the file.
+    """
     logger.info(Messages.OPENING_FILE.format(file_path=file_path))
     with open(file_path, "r", encoding="utf-8") as f:
         full_text = f.read()
@@ -111,24 +134,47 @@ def read_text_file(file_path: str, max_tokens: int = 300, overlap_tokens: int = 
     return chunks
 
 
+
+
 def store_in_collection(collection, chunks: list[str], file_path: str) -> None:
-    """Store chunks in ChromaDB."""
+    """
+    Store a list of text chunks into a ChromaDB collection.
+
+    Args:
+        collection (chromadb.api.models.Collection.Collection): ChromaDB collection object.
+        chunks (list[str]): List of text chunks to store.
+        file_path (str): Source file path for metadata.
+    """
     if not chunks:
         logger.info("No documents to add to the collection")
         return
+
     logger.info(Messages.ADDING_DOCUMENTS)
 
     ids = [str(uuid.uuid4()) for _ in range(len(chunks))]
     metadatas = [
-        {MetadataKeys.LINE_NUMBER: i, MetadataKeys.SOURCE: os.path.basename(file_path)}
+        {
+            MetadataKeys.LINE_NUMBER: i,
+            MetadataKeys.SOURCE: file_path,  # full path for consistency with delete()
+        }
         for i in range(len(chunks))
     ]
+
     collection.add(documents=chunks, ids=ids, metadatas=metadatas)
     logger.info(Messages.DOCUMENTS_ADDED)
 
 
+
 def get_collection_documents(collection) -> dict[str, tuple[str, str]]:
-    """Return current docs in collection mapped by source+chunk_index."""
+    """
+    Retrieve all documents from a ChromaDB collection.
+
+    Args:
+        collection (chromadb.api.models.Collection.Collection): ChromaDB collection object.
+
+    Returns:
+        dict[str, tuple[str, str]]: Mapping of "source+chunk_index" to (document text, document ID).
+    """
     data = collection.get(include=['documents', 'metadatas'])
     return {
         f"{meta['source']}{meta['line_number']}": (doc, id)
@@ -137,55 +183,62 @@ def get_collection_documents(collection) -> dict[str, tuple[str, str]]:
 
 
 def delete_documents(collection, ids: list[str]) -> None:
-    """Delete docs from collection by IDs."""
+    """
+    Delete documents from the collection by their IDs.
+
+    Args:
+        collection (chromadb.api.models.Collection.Collection): ChromaDB collection object.
+        ids (list[str]): List of document IDs to delete.
+    """
     if ids:
         logger.info(f"Deleting {len(ids)} outdated documents")
         collection.delete(ids=ids)
 
 
+
+
 def sync_text_file_with_collection(collection, file_path: str, force: bool = False) -> None:
     """
-    Synchronize a file with the ChromaDB collection using token-based chunks.
+    Store a text file's content into the ChromaDB collection.
+
+    - New file: always adds chunks (even duplicates).
+    - Same file (with force=True): deletes old chunks of that file, then adds updated ones.
     """
-    logger.info(f"Synchronizing collection '{ChromaDBConfig.COLLECTION_NAME}' with file '{file_path}'")
-    
+    logger.info(f"Processing file '{file_path}' into collection '{ChromaDBConfig.COLLECTION_NAME}'")
+
     ensure_text_file_exists(file_path)
     new_chunks = read_text_file(file_path)
     if not new_chunks:
         logger.info("No new documents to process")
         return
 
+    # If force=True → remove existing chunks from this file
     if force:
-        logger.info(Messages.FORCE_CLEAR_COLLECTION.format(collection_name=ChromaDBConfig.COLLECTION_NAME))
-        collection.delete(ids=None, where={})
-        store_in_collection(collection, new_chunks, file_path)
-        logger.info(Messages.DOCS_ADDED)
-        return
+        logger.info(f"Force mode ON -> deleting old chunks for file: {file_path}")
+        try:
+            collection.delete(where={"source": file_path})
+            logger.info(f"Old chunks for file '{file_path}' deleted successfully")
+        except Exception as e:
+            logger.warning(f"No existing chunks found for file '{file_path}': {str(e)}")
 
-    # Get existing docs
-    current_docs = get_collection_documents(collection)
-    new_docs = {f"{os.path.basename(file_path)}{i}": chunk for i, chunk in enumerate(new_chunks)}
+    # Always add new chunks (with file metadata)
+    store_in_collection(collection, new_chunks, file_path)
+    logger.info(Messages.DOCS_ADDED)
 
-    # Detect changes
-    to_delete_ids = [id for key, (_, id) in current_docs.items() if key not in new_docs]
-    to_add = [
-        (chunk, i) for i, chunk in enumerate(new_chunks)
-        if f"{os.path.basename(file_path)}{i}" not in current_docs
-        or current_docs[f"{os.path.basename(file_path)}{i}"][0] != chunk
-    ]
 
-    # Apply changes
-    delete_documents(collection, to_delete_ids)
-    if to_add:
-        chunks, _ = zip(*to_add)
-        store_in_collection(collection, list(chunks), file_path)
-        logger.info(Messages.DOCS_ADDED)
-    elif not to_delete_ids:
-        logger.info(Messages.COLLECTION_NOT_EMPTY)
+
 
 
 def initialize_collection():
-    """Initialize collection and load default file if empty."""
+    """
+    Initialize the ChromaDB collection and load a default file if empty.
+
+    If the collection already contains documents, it logs the count.
+    If empty, it loads data from the configured file path.
+
+    Raises:
+        RuntimeError: If initialization fails.
+    """
     try:
         collection = get_chroma_collection()
         if collection.count() > 0:
