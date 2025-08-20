@@ -4,13 +4,14 @@
 # from fastapi import APIRouter, HTTPException
 # from dtos.question_request import QuestionRequest
 # from dtos.ask_request import AskRequest
-# from chroma_functionalities import collection
+# # We need to import the function that gets the collection, not the collection itself.
+# from chroma_functionalities import get_chroma_collection
 
 # # --- Load environment variables ---
 # load_dotenv()
 # API_KEY = os.getenv("GEMINI_API_KEY")
 # if not API_KEY:
-#     raise RuntimeError(" GEMINI_API_KEY is not set in environment variables")
+#     raise RuntimeError("GEMINI_API_KEY is not set in environment variables")
 
 # # --- Configure Gemini API ---
 # genai.configure(api_key=API_KEY)
@@ -20,7 +21,7 @@
 # router = APIRouter()
 
 # # --- Normal Gemini question answering ---
-# @router.post("/ask-gemini")
+# @router.post("/ask-gemini", tags=["Gemini"])
 # async def ask_gemini_endpoint(req: QuestionRequest):
 #     """
 #     Sends the question to Gemini and returns an answer (max 500 characters).
@@ -41,7 +42,7 @@
 
 
 # # --- RAG with ChromaDB ---
-# @router.post("/ask_rag")
+# @router.post("/ask_rag", tags=["RAG"])
 # def ask_with_rag(req: AskRequest):
 #     """
 #     Retrieve documents from ChromaDB and answer using Gemini.
@@ -50,9 +51,11 @@
 #         if not hasattr(req, "query"):
 #             raise HTTPException(status_code=400, detail="Missing 'query' field in request body")
 
-#         query_text = req.query  
+#         query_text = req.query
 
-#         # Step 1: Retrieve documents
+#         # Step 1: Get the current collection and retrieve documents
+#         # This ensures we are always querying the most up-to-date collection.
+#         collection = get_chroma_collection()
 #         retrieved = collection.query(
 #             query_texts=[query_text],
 #             n_results=3
@@ -71,14 +74,13 @@
 
 #         # Step 3: Ask Gemini with context
 #         prompt = (
-#         f"You are an assistant with access to the following policy documents:\n\n"
-#         f"{context_text}\n\n"
-#         f"Answer the following question based only on the above context. "
-#         f"Do not include document names, file names, section numbers, or citations in your response. "
-#         f"Respond in plain natural language only.\n\n"
-#         f"Question: {query_text}"
+#             f"You are an assistant with access to the following policy documents:\n\n"
+#             f"{context_text}\n\n"
+#             f"Answer the following question based only on the above context. "
+#             f"Do not include document names, file names, section numbers, or citations in your response. "
+#             f"Respond in plain natural language only.\n\n"
+#             f"Question: {query_text}"
 #         )
-
 
 #         response = model.generate_content(prompt)
 #         answer = response.text.strip()
@@ -98,16 +100,14 @@
 
 #     except Exception as e:
 #         raise HTTPException(status_code=500, detail=f"RAG pipeline failed: {str(e)}")
-    
-
-
 import os
 from dotenv import load_dotenv
 import google.generativeai as genai
 from fastapi import APIRouter, HTTPException
 from dtos.question_request import QuestionRequest
 from dtos.ask_request import AskRequest
-from chroma_functionalities import collection
+# We need to import the function that gets the collection, not the collection itself.
+from chroma_functionalities import get_chroma_collection
 
 # --- Load environment variables ---
 load_dotenv()
@@ -153,9 +153,11 @@ def ask_with_rag(req: AskRequest):
         if not hasattr(req, "query"):
             raise HTTPException(status_code=400, detail="Missing 'query' field in request body")
 
-        query_text = req.query  
+        query_text = req.query
 
-        # Step 1: Retrieve documents
+        # Step 1: Get the current collection and retrieve documents
+        # This ensures we are always querying the most up-to-date collection.
+        collection = get_chroma_collection()
         retrieved = collection.query(
             query_texts=[query_text],
             n_results=3
