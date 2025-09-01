@@ -126,6 +126,63 @@
 
 
 
+# from enum import Enum
+
+# class Endpoints(str, Enum):
+#     API_PREFIX = "/api"
+#     DATA = "/data"
+#     RAW_DATA = "/data/raw"
+#     DATA_BY_ID = "/data/{doc_id}"
+#     UPLOAD_TEXT_FILE = "/data/upload/text"
+#     DROP_DATABASE = "/data/drop"
+#     ASK_GEMINI = "/ask-gemini"
+#     ASK_RAG = "/ask-rag"
+#     ROOT = "/"
+
+# class Messages(str, Enum):
+#     # ChromaDB messages
+#     CHROMA_COLLECTION_CREATED = "ChromaDB collection created."
+#     CHROMA_COLLECTION_RETRIEVED = "ChromaDB collection retrieved."
+#     COLLECTION_EXISTS_WITH_DATA = "Collection  already exists with documents."
+#     COLLECTION_EXISTS_EMPTY = "Collection exists but is empty. Loading default data."
+#     DOCUMENTS_ADDED = "Documents added to ChromaDB."
+#     ADDING_DOCUMENTS = "Adding documents to ChromaDB..."
+#     DATABASE_DROPPED = "ChromaDB database folder  deleted successfully."
+
+#     # File related messages
+#     FILE_UPLOADED = "File  uploaded and processed successfully."
+#     FILE_NOT_FOUND = "File not found at"
+#     INVALID_FILE_TYPE = "Invalid file type. Only .txt, .pdf, and .docx files are allowed."
+#     NO_DATA_TO_PROCESS = "No data found in the file to process."
+
+#     # Document management messages
+#     DOC_NOT_FOUND = "Document not found."
+#     DOC_DELETED = "Document with ID deleted successfully."
+#     ALL_DOCS_DELETED = "All documents deleted successfully."
+#     DELETE_FAILED = "Failed to delete all documents."
+
+#     # Error messages
+#     ERROR_GENERAL = "An error occurred: {error}"
+#     ERROR_FILE_UPLOAD = "File upload failed: {error}"
+#     ERROR_DELETION = "Document deletion failed: {error}"
+#     DATABASE_NOT_FOUND = "Database directory not found at '{db_directory}'."
+
+#     # General messages
+#     APP_RUNNING = "Application is running"
+
+# class ChromaDBConfig(str, Enum):
+#     DB_DIRECTORY = "db_data"
+#     COLLECTION_NAME = "rag_collection"
+#     EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+#     FILE_PATH = "data/source_docs.txt"
+
+# class MetadataKeys(str, Enum):
+#     SOURCE = "source"
+#     CHUNK_ID = "chunk_id"
+#     FILENAME = "filename"
+#     LINE_NUMBER = "line_number"
+
+# utils/enums.py
 from enum import Enum
 
 class Endpoints(str, Enum):
@@ -140,34 +197,29 @@ class Endpoints(str, Enum):
     ROOT = "/"
 
 class Messages(str, Enum):
-    # ChromaDB messages
     CHROMA_COLLECTION_CREATED = "ChromaDB collection created."
     CHROMA_COLLECTION_RETRIEVED = "ChromaDB collection retrieved."
-    COLLECTION_EXISTS_WITH_DATA = "Collection  already exists with documents."
+    COLLECTION_EXISTS_WITH_DATA = "Collection already exists with documents."
     COLLECTION_EXISTS_EMPTY = "Collection exists but is empty. Loading default data."
     DOCUMENTS_ADDED = "Documents added to ChromaDB."
     ADDING_DOCUMENTS = "Adding documents to ChromaDB..."
-    DATABASE_DROPPED = "ChromaDB database folder  deleted successfully."
+    DATABASE_DROPPED = "ChromaDB database folder deleted successfully."
 
-    # File related messages
-    FILE_UPLOADED = "File  uploaded and processed successfully."
+    FILE_UPLOADED = "File uploaded and processed successfully."
     FILE_NOT_FOUND = "File not found at"
     INVALID_FILE_TYPE = "Invalid file type. Only .txt, .pdf, and .docx files are allowed."
     NO_DATA_TO_PROCESS = "No data found in the file to process."
 
-    # Document management messages
     DOC_NOT_FOUND = "Document not found."
-    DOC_DELETED = "Document with ID deleted successfully."
+    DOC_DELETED = "Document deleted successfully."
     ALL_DOCS_DELETED = "All documents deleted successfully."
     DELETE_FAILED = "Failed to delete all documents."
 
-    # Error messages
     ERROR_GENERAL = "An error occurred: {error}"
     ERROR_FILE_UPLOAD = "File upload failed: {error}"
     ERROR_DELETION = "Document deletion failed: {error}"
     DATABASE_NOT_FOUND = "Database directory not found at '{db_directory}'."
 
-    # General messages
     APP_RUNNING = "Application is running"
 
 class ChromaDBConfig(str, Enum):

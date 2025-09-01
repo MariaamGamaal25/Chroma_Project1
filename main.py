@@ -36,7 +36,10 @@ import uvicorn
 from fastapi import FastAPI
 from routers import chroma_router, gemini_router, home_router
 from utils.enums import Endpoints
-from chroma_functionalities import initialize_collection, get_chroma_collection
+# from chroma_functionalities import initialize_collection, get_chroma_collection
+
+from chroma_functionalities import  get_chroma_collection
+
 
 # --- FastAPI App Initialization ---
 app = FastAPI(title="ChromaDB RAG API")
@@ -44,7 +47,9 @@ app = FastAPI(title="ChromaDB RAG API")
 # --- Router Registration ---
 app.include_router(chroma_router.router, prefix=Endpoints.API_PREFIX)
 
-app.include_router(gemini_router.router, prefix=Endpoints.API_PREFIX)
+# app.include_router(gemini_router.router, prefix=Endpoints.API_PREFIX)
+# main.py
+app.include_router(gemini_router.router)  # no extra prefix!
 
 app.include_router(home_router.router)
 

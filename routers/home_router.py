@@ -9,6 +9,7 @@
 #     A simple root endpoint to check if the server is running.
 #     """
 #     return {"message": Messages.APP_RUNNING}
+
 import os
 from fastapi import APIRouter
 from utils.enums import Endpoints, Messages
